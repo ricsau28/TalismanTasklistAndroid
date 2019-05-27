@@ -1,0 +1,48 @@
+
+
+    
+    @Override
+    public void receiveJSONInfo(String jsonString) {
+        String[] statusResult;
+        long newUserID = -1;
+
+        /*
+        Util.writeToLog("*********** Hey, dude. This is receiveJSONInfo. Read below please. ************");
+        Util.writeToLog(jsonString);
+        Util.makeToast(this, jsonString);
+
+        */
+
+        Util.writeToLog("JSON string to be parsed: " + jsonString);
+
+        //String newString = jsonString.replace("{", "");
+        //JSON response: {"Status":-1}
+
+        String newString = jsonString.replace("JSON response: {\"Status\":", "");
+        newString = newString.replace("}", "");
+
+        /*
+        newString = newString.replace("}", "");
+        newString = newString.replace("\"Status\"", "");
+        newString = newString.replace("JSON response", "").trim();
+        String toParse = newString.replace(":", "").trim();
+
+        Util.writeToLog("To be parsed: " + toParse);
+        newUserID = Long.valueOf(toParse);
+        */
+
+        Util.writeToLog("To be parsed: " + newString);
+        newUserID = Long.valueOf(newString);
+
+        if(newUserID >= 0)
+            Util.makeToast(this, Long.toString(newUserID) + " successfully registered!");
+        else
+            Util.makeToast(this, "Error: could not register you.");
+
+        //=====================
+        initApp2(false);
+
+        //Add user to local db
+        DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
+        newUserID = dbHelper.addUser(appUser.getUserName(), appUser.getUserPassword());
+    }

@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Talisman Task List v0.3</string>
+    <string name="action_settings">Settings</string>
+    <string name="task_details">Task Details</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="open_tasks">Open Tasks</string>
+    <string name="completed_tasks">Completed Tasks</string>
+    <string name="server_tasks">Download</string>
+    <string name="all_tasks">All Tasks</string>
+    <string name="deleted_tasks">Deleted Tasks</string>
+    <string name="all_server">Server</string>
+    <string name="server_upload_tasks">Upload</string>
+    <string name="server_download_tasks">Download</string>
+    <string name="action_test_server">Test Server</string>
+    <string name="action_delete_all_tasks">Delete All Tasks</string>
+</resources>
