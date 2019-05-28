@@ -110,6 +110,8 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
     private void doOneTimeActions() {
         // === TODO: DELETE WHEN FINISHED! ================================
         //DatabaseHelper dbh = DatabaseHelper.getInstance(this);
+        //dbh.executeSQL("UPDATE tasks SET status = " + Constants.TASK_OPEN + ", to_delete =0");
+        //dbh.executeSQL("UPDATE tasks SET to_delete = 0");
         //dbh.updateTaskOrder();
         //boolean flag = dbh.createViewOrderTable();
 
@@ -206,6 +208,10 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
             case R.id.action_delete_all_tasks:
                 deleteLocalTasks();
                 return true;
+
+            case R.id.action_archived_tasks:
+                selectedMode = Constants.ARCHIVED_TASKS;
+                break;
 
 
             default:
@@ -359,7 +365,9 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
     }// end onActivityResult
 
 
-
+    public int getTasksShowingMode() {
+        return tasksShowingMode;
+    }
 
     public void startTestActivity() {
 
@@ -465,6 +473,10 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
                 status = "Downloaded Tasks (" + taskCount + ")";
                 break;
 
+            case Constants.ARCHIVED_TASKS:
+                status = "Archived Tasks (" + taskCount + ")";
+                break;
+
             default:
                 status = "Local Tasks (" + taskCount + ")";
                 break;
@@ -485,6 +497,9 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
         int userID;
 
         //addOneBogusTask();
+
+        saveSwappedTaskPositionsToDB();
+
 
         DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
 
@@ -594,7 +609,7 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
                 updateUI();
 
                 if(direction == ItemTouchHelper.LEFT) {
-                   if( markTaskAsDeleted(task) ) {
+                   if( markTaskAsDeleted(task, position) ) {
                        Util.makeToast(recyclerView.getContext(), "Deleted task " + task.getTaskName());
                    } else {
                        Util.makeToast(recyclerView.getContext(), "Error: Couldn't delete task " + task.getTaskName() + " in database");
@@ -602,7 +617,7 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
                 }
 
                 if(direction == ItemTouchHelper.RIGHT) {
-                    if(markTaskAsCompleted(task)){
+                    if(markTaskAsCompleted(task, position)){
                         Util.makeToast(recyclerView.getContext(), "Completed task " + task.getTaskName());
                     } else {
                         Util.makeToast(recyclerView.getContext(), "Error: Couldn't mark task as complete " + task.getTaskName() + " in database");
@@ -612,6 +627,58 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
             }
         }).attachToRecyclerView(recyclerView);
 
+    }
+
+
+    public void deleteTask(TaskCLS task) {
+        if(task == null)
+            return;
+
+        if(task.getStatus() != Constants.TASK_DELETED) {
+            taskListManager.deleteTask(task);
+            adapter.notifyDataSetChanged();
+            updateUI();
+            Util.makeToast(this, "Deleted task");
+        }
+    }//end deleteTask
+
+
+    public void unDeleteTask(TaskCLS task) {
+        if(task == null)
+            return;
+
+        if(task.getStatus() == Constants.TASK_DELETED) {
+            taskListManager.unDeleteTask(task);
+            adapter.notifyDataSetChanged();
+            updateUI();
+            Util.makeToast(this, "Undeleted task");
+        }
+    }//end unDeleteTask
+
+
+    public void unArchiveTask(TaskCLS task) {
+        if(task == null)
+            return;
+
+        if(task.getStatus() == Constants.TASK_ARCHIVED) {
+            taskListManager.changeArchiveStatus(task, Constants.TASK_OPEN);
+            //adapter.notifyItemRemoved(taskPosition);
+            adapter.notifyDataSetChanged();
+            updateUI();
+        }
+    }
+
+
+    public void setTaskToArchive(TaskCLS task) {
+        if(task == null)
+            return;
+
+        if(task.getStatus() != Constants.TASK_DELETED) {
+            taskListManager.changeArchiveStatus(task, Constants.TASK_ARCHIVED);
+            //adapter.notifyItemRemoved(taskPosition);
+            adapter.notifyDataSetChanged();
+            updateUI();
+        }
     }
 
     private void saveSwappedTaskPositionsToDB() {
@@ -631,6 +698,8 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
             //        ", Value = " + entry.getValue());
         }
 
+        movedTasks.clear();
+
     }// end saveSwappedTaskPositionsToDB
 
     private void saveSwappedTaskPosition(int oldPosition, int newPosition) {
@@ -645,24 +714,29 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
 
     }// end saveSwappedTaskPosition
 
-    private boolean markTaskAsDeleted(TaskCLS task) {
+    private boolean markTaskAsDeleted(TaskCLS task, int position) {
         DatabaseHelper dbh = DatabaseHelper.getInstance(this);
 
         if(dbh.updateTaskDeletionStatus(task.getTaskID(), Constants.TASK_DELETED)) {
-            task.setStatus(Constants.TASK_DELETED);
-            task.setDateModified(Util.getCurrentDateTime());
+            //task.setStatus(Constants.TASK_DELETED);
+            //task.setDateModified(Util.getCurrentDateTime());
+            taskListManager.deleteTask(position);
+            //adapter.notifyItemRemoved(position);
+            adapter.notifyDataSetChanged();
             return true;
         }
         else
             return false;
     }
 
-    private boolean markTaskAsCompleted(TaskCLS task) {
+    private boolean markTaskAsCompleted(TaskCLS task, int position) {
         DatabaseHelper dbh = DatabaseHelper.getInstance(this);
 
         if(dbh.updateTaskStatus(task.getTaskID(), Constants.TASK_COMPLETED)) {
-            task.setStatus(Constants.TASK_COMPLETED);
-            task.setDateModified(Util.getCurrentDateTime());
+            //task.setStatus(Constants.TASK_COMPLETED);
+            //task.setDateModified(Util.getCurrentDateTime());
+            taskListManager.markTaskAsCompleted(position);
+            adapter.notifyItemRemoved(position);
             return true;
         }
         else

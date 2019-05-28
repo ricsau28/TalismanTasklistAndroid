@@ -33,9 +33,14 @@
         android:title="@string/action_delete_all_tasks"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_archived_tasks"
+        android:orderInCategory="106"
+        android:title="@string/action_archived_tasks"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_server"
         android:title="@string/all_server"
-        android:orderInCategory="106"
+        android:orderInCategory="107"
         app:showAsAction="never">
 
         <menu>

@@ -70,7 +70,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db = this.getWritableDatabase();
             db.execSQL(sqlString);
         } catch (SQLiteException slex) {
-            Util.writeToLog("DatabaseHelper.getWritableDatabase: " + slex.getMessage());
+            Util.writeToLog("DatabaseHelper.executeSQL: " + slex.getMessage());
         }
 
     }// end executeSQL
@@ -145,7 +145,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = doGetWritableDatabase();
 
         //String query = "DELETE FROM " + TASKS_TABLE + " WHERE _id=" + String.valueOf(id);
-        String query = "UPDATE " + TASKS_TABLE + " SET to_delete = " + Constants.TASK_DELETED + " " +
+        String query = "UPDATE " + TASKS_TABLE + " SET status = " + Constants.TASK_DELETED + ", " +
+                       "to_delete = 1 " +
                        "WHERE _id=" + String.valueOf(id);
 
         Util.writeToLog("deleteName: query: " + query);
@@ -171,6 +172,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
     public boolean updateTaskDeletionStatus(int id, int newStatus){
+        //TODO: decide on having a to_delete flag OR TASK_DELETED status...not both
         boolean deleted = true;
         int to_delete = 0;
 
@@ -179,7 +181,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
         SQLiteDatabase db = this.getWritableDatabase();
-        String query = "UPDATE " + TASKS_TABLE + " SET to_delete= " + to_delete + " " +
+        String query = "UPDATE " + TASKS_TABLE + " SET to_delete= " + to_delete + ", " +
+                       "status = " + newStatus + " " +
                        "WHERE _id=" + String.valueOf(id) ;
 
         Util.writeToLog("updateTaskDeletionStatus: query: " + query);
@@ -200,11 +203,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public boolean updateTaskStatus(int id, int newStatus){
         boolean updated = true;
+        String query = null;
 
         SQLiteDatabase db = this.getWritableDatabase();
-        String query = "UPDATE " + TASKS_TABLE + " SET status= " + newStatus  + ", " +
-                       "modification_date='" + Util.getCurrentDateTime() + "' " +
-                       "WHERE _id=" + String.valueOf(id) ;
+        if(newStatus != Constants.TASK_DELETED) {
+            query = "UPDATE " + TASKS_TABLE + " SET status= " + newStatus + ", " +
+                    "modification_date='" + Util.getCurrentDateTime() + "', " +
+                    "to_delete = 0 " +
+                    "WHERE _id=" + String.valueOf(id);
+        }
 
         Util.writeToLog("updateTaskStatus: query: " + query);
 
@@ -646,6 +653,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 taskStatus = Constants.TASK_DELETED;
                 break;
 
+            case Constants.ARCHIVED_TASKS:
+                taskStatus = Constants.TASK_ARCHIVED;
+                break;
+
             case Constants.ALL_TASKS:
                 taskStatus = Constants.TASK_OPEN + Constants.TASK_COMPLETED;
                 break;
@@ -728,6 +739,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
             case Constants.TASK_COMPLETED:
             case Constants.TASK_OPEN:
+            case Constants.TASK_ARCHIVED:
                 query = baseQuery + criteria + " AND status = " + taskStatus;
                 break;
 

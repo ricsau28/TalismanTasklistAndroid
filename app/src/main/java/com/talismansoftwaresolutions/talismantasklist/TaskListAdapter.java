@@ -5,9 +5,12 @@ import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 
@@ -17,13 +20,17 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.TaskVi
 
     public class TaskViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
         TextView tvTask;
+        TextView tvViewOption;
         int taskPosition;
         final TaskListAdapter adapter;
 
         public TaskViewHolder(View viewItem, TaskListAdapter adapter) {
             super(viewItem);
+
             this.adapter = adapter;
             tvTask = itemView.findViewById(R.id.task_name);
+            tvViewOption = itemView.findViewById(R.id.textViewOptions);
+
             viewItem.setOnClickListener(this);
         }
 
@@ -121,9 +128,71 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.TaskVi
     }
 
     @Override
-    public void onBindViewHolder(TaskViewHolder holder, int position) {
-        TaskCLS task = taskList.get(position);
+    public void onBindViewHolder(final TaskViewHolder holder, final int position) {
+        final TaskCLS task = taskList.get(position);
+        final int taskShowingMode = ((MainActivity)ctx).getTasksShowingMode();
+
+
         holder.tvTask.setText(task.getTaskName());
+
+        holder.tvViewOption.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                PopupMenu popup = new PopupMenu(ctx, holder.tvViewOption);
+                switch(taskShowingMode) {
+                    case Constants.ARCHIVED_TASKS:
+                        popup.inflate(R.menu.menu_unarchive);
+                        break;
+
+                    case Constants.DELETED_TASKS:
+                        popup.inflate(R.menu.menu_undelete);
+                        break;
+
+                    default:
+                        popup.inflate(R.menu.options_menu);
+                        break;
+                }
+
+                //popup.inflate(R.menu.options_menu);
+
+                popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        switch (item.getItemId()) {
+                            case R.id.menu_item_archive:
+                                //Util.makeToast(ctx, "Task " + task.getTaskName() + " will be archived");
+                                ((MainActivity)ctx).setTaskToArchive(task); //position
+                                break;
+
+                            case R.id.menu_item_unarchive:
+                                //Util.makeToast(ctx, "Task " + task.getTaskName() + " will be archived");
+                                ((MainActivity)ctx).unArchiveTask(task); //position
+                                break;
+
+                            case R.id.menu_item_undelete:
+                                //Util.makeToast(ctx, "Undeleting " + task.getTaskName());
+                                ((MainActivity)ctx).unDeleteTask(task);
+                                break;
+
+                            case R.id.menu_item_delete:
+                                //Util.makeToast(ctx, "Undeleting " + task.getTaskName());
+                                ((MainActivity)ctx).deleteTask(task);
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        return false;
+                    }
+                });
+
+                popup.show();
+
+            }// end onClick
+        });
+
     }
 
     @Override

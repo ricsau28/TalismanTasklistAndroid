@@ -101,6 +101,31 @@ public class TaskListManager {
     }
 
 
+    private int findTaskPosition(TaskCLS taskToFind) {
+        //TODO: store tasks in hashtable by task name
+        String taskName = taskToFind.getTaskName();
+
+        for(int i = 0; i < taskList.size(); i++) {
+            if(taskName.equals( (taskList.get(i)).getTaskName()) ) {
+                return i;
+            }
+        }
+        return -1;
+    }// end findTaskPosition
+
+
+    public void removeTask(TaskCLS task) {
+        int position = findTaskPosition(task);
+        taskList.remove(position);
+    }// end removeTask
+
+
+    public void removeTask(int position){
+        if(position >= 0) {
+            this.taskList.remove(position);
+        }
+    }// end removeTask
+
 
     //TODO: Scrap current implentation of matching task ids to view order
     //      It's not working. There are duplicates populating the recyclerview
@@ -126,11 +151,70 @@ public class TaskListManager {
 
     }
 
-    public void removeTask(int position){
-        if(position >= 0) {
-            this.taskList.remove(position);
+    public void markTaskAsCompleted(int position) {
+        TaskCLS task = taskList.get(position);
+        task.setStatus(Constants.TASK_COMPLETED);
+        task.setDateModified(Util.getCurrentDateTime());
+        removeTask(position);
+    }
+
+    public void deleteTask(int position) {
+        TaskCLS task = taskList.get(position);
+        task.setStatus(Constants.TASK_DELETED);
+        //task.setDateModified(Util.getCurrentDateTime());
+        removeTask(position);
+    }
+
+    public boolean deleteTask(TaskCLS task) {
+        if(task.getStatus() == Constants.TASK_DELETED)
+            return false;
+
+        DatabaseHelper dbh = DatabaseHelper.getInstance(context);
+
+        if(dbh.updateTaskDeletionStatus(task.getTaskID(), Constants.TASK_DELETED)) {
+            task.setStatus(Constants.TASK_DELETED);
+            removeTask(task);
+            return true;
+        } else {
+            return false;
         }
-    }// end removeTask
+
+    }// end setTaskAsArchived
+
+
+
+    public boolean unDeleteTask(TaskCLS task) {
+        if(task.getStatus() != Constants.TASK_DELETED)
+            return false;
+
+        DatabaseHelper dbh = DatabaseHelper.getInstance(context);
+
+        if(dbh.updateTaskDeletionStatus(task.getTaskID(), Constants.TASK_OPEN)) {
+            task.setStatus(Constants.TASK_OPEN);
+            removeTask(task);
+            return true;
+        } else {
+            return false;
+        }
+
+    }// end setTaskAsArchived
+
+    public boolean changeArchiveStatus(TaskCLS task, int archiveStatus) {
+
+        if(archiveStatus != Constants.TASK_ARCHIVED && archiveStatus != Constants.TASK_OPEN)
+            return false;
+
+        DatabaseHelper dbh = DatabaseHelper.getInstance(context);
+
+        if(dbh.updateTaskStatus(task.getTaskID(), archiveStatus)) {
+            task.setStatus(archiveStatus);
+            removeTask(task);
+            return true;
+        } else {
+            return false;
+        }
+
+    }// end setTaskAsArchived
 
 
     public void swap(int oldPosition, int newPosition) {

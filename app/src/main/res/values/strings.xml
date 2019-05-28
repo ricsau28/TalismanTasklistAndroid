@@ -14,4 +14,5 @@
     <string name="server_download_tasks">Download</string>
     <string name="action_test_server">Test Server</string>
     <string name="action_delete_all_tasks">Delete All Tasks</string>
+    <string name="action_archived_tasks">Archived Tasks</string>
 </resources>
