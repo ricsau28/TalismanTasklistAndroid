@@ -65,7 +65,10 @@ public class TaskDetailsActivity extends AppCompatActivity {
     }
 
     private void deleteTask() {
-        taskHolder.itemRemoved();
+        //taskHolder.itemRemoved();
+        String taskName = txtTaskView.getText().toString().trim();
+        TaskController taskController = TaskController.getInstance(this);
+        taskController.deleteTask(taskName);
         finish();
     }
 

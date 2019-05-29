@@ -69,7 +69,7 @@ public class TaskCLS {
     public int getToDelete() { return toDelete; }
     public void setToDelete(int toDelete) { this.toDelete = toDelete;}
 
-    //Credit: https://www.geeksforgeeks.org/equals-hashcode-methods-java/
+    //Adapted from: https://www.geeksforgeeks.org/equals-hashcode-methods-java/
     public boolean equals (Object obj) {
         if(this == obj)
             return true;
@@ -78,7 +78,8 @@ public class TaskCLS {
             return false;
 
         TaskCLS task = (TaskCLS)obj;
-        return(task.taskID == this.taskID && task.taskName == this.taskName);
+        //return(task.taskID == this.taskID && task.taskName == this.taskName);
+        return( task.taskID == this.taskID ||  task.taskName.equals(this.taskName));
     }
 
     public int hashCode() {

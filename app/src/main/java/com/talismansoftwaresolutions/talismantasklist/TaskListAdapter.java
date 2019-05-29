@@ -68,6 +68,8 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.TaskVi
         public void itemRemoved() {
             DataHolder dataHolder = DataHolder.getInstance();
             TaskCLS task = (TaskCLS)dataHolder.retrieve("Task");
+
+            /*
             int id = task.getTaskID();
             String taskName = task.getTaskName();
 
@@ -86,6 +88,7 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.TaskVi
 
                 Util.makeToast(ctx, "Task deleted: " + taskName);
             }
+            */
         }
 
         public void dataChanged(boolean taskDetailsChanged) {
@@ -98,7 +101,7 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.TaskVi
                 if(task != null) {
 
                     try {
-                        (DatabaseHelper.getInstance(ctx)).updateTask(task.getTaskID(), taskName);
+                        (DatabaseHelper.getInstance(ctx)).updateTaskName(task.getTaskID(), taskName);
                     } catch (Exception ex) {
                         Util.writeToLog("datachanged: Could not remove task from database (" + String.valueOf(taskID) + ")");
                         return;
@@ -130,10 +133,12 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.TaskVi
     @Override
     public void onBindViewHolder(final TaskViewHolder holder, final int position) {
         final TaskCLS task = taskList.get(position);
+        final String taskName = task.getTaskName();
+
         final int taskShowingMode = ((MainActivity)ctx).getTasksShowingMode();
 
 
-        holder.tvTask.setText(task.getTaskName());
+        holder.tvTask.setText(taskName);
 
         holder.tvViewOption.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -159,30 +164,32 @@ public class TaskListAdapter extends RecyclerView.Adapter<TaskListAdapter.TaskVi
                 popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                     @Override
                     public boolean onMenuItemClick(MenuItem item) {
+                        String taskName = task.getTaskName();
+                        TaskController controller = TaskController.getInstance(ctx);
+                        int status = Constants.TASK_OPEN;
+
                         switch (item.getItemId()) {
                             case R.id.menu_item_archive:
-                                //Util.makeToast(ctx, "Task " + task.getTaskName() + " will be archived");
-                                ((MainActivity)ctx).setTaskToArchive(task); //position
+                                status =  Constants.TASK_ARCHIVED;
                                 break;
 
                             case R.id.menu_item_unarchive:
-                                //Util.makeToast(ctx, "Task " + task.getTaskName() + " will be archived");
-                                ((MainActivity)ctx).unArchiveTask(task); //position
+                                status =  Constants.TASK_OPEN;
                                 break;
 
                             case R.id.menu_item_undelete:
-                                //Util.makeToast(ctx, "Undeleting " + task.getTaskName());
-                                ((MainActivity)ctx).unDeleteTask(task);
+                                status =  Constants.TASK_OPEN;
                                 break;
 
                             case R.id.menu_item_delete:
-                                //Util.makeToast(ctx, "Undeleting " + task.getTaskName());
-                                ((MainActivity)ctx).deleteTask(task);
+                                status =  Constants.TASK_DELETED;
                                 break;
 
                             default:
-                                break;
+                                return false;
                         }
+
+                        ((MainActivity)ctx).onChangeTaskStatus(taskName, status);
 
                         return false;
                     }

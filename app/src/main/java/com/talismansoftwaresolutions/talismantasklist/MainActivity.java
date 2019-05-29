@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
     UserCLS appUser;
     boolean userAuthenticated;
     HashMap<Integer, Integer> movedTasks = new HashMap<>();
+    TaskController taskController;
 
     public static int tasksShowingMode;
 
@@ -76,6 +77,8 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
             }});
 
         taskListManager = TaskListManager.getInstance(this);
+        taskController = TaskController.getInstance(this);
+
 
         try {
               //=== DELETE WHEN FINISHED! ================================
@@ -494,9 +497,6 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
     }
 
     private void populateList(int taskStatus) {
-        int userID;
-
-        //addOneBogusTask();
 
         saveSwappedTaskPositionsToDB();
 
@@ -565,7 +565,6 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
                 return super.getSwipeDirs(recyclerView, viewHolder);
             }
 
-
             @Override
             public boolean isLongPressDragEnabled() {
                 if(tasksShowingMode == Constants.OPEN_TASKS)
@@ -573,8 +572,6 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
                 else
                     return false;
             }
-
-
 
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder dragged, RecyclerView.ViewHolder target) {
@@ -596,90 +593,58 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
 
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-
-                int position = viewHolder.getAdapterPosition(); //getLayoutPosition
-
-                TaskCLS task = taskListManager.getTask(position);
-
-                //taskList.remove(position);
-                taskListManager.removeTask(position);
-                //taskListManager.removeTask(task);
-                adapter.notifyItemRemoved(position);
-
-                updateUI();
+                String taskName = ((TaskListAdapter.TaskViewHolder)viewHolder).tvTask.getText().toString();
 
                 if(direction == ItemTouchHelper.LEFT) {
-                   if( markTaskAsDeleted(task, position) ) {
-                       Util.makeToast(recyclerView.getContext(), "Deleted task " + task.getTaskName());
-                   } else {
-                       Util.makeToast(recyclerView.getContext(), "Error: Couldn't delete task " + task.getTaskName() + " in database");
-                   }
+                    onChangeTaskStatus(taskName, Constants.TASK_DELETED);
                 }
-
-                if(direction == ItemTouchHelper.RIGHT) {
-                    if(markTaskAsCompleted(task, position)){
-                        Util.makeToast(recyclerView.getContext(), "Completed task " + task.getTaskName());
-                    } else {
-                        Util.makeToast(recyclerView.getContext(), "Error: Couldn't mark task as complete " + task.getTaskName() + " in database");
-                    }
+                else if(direction == ItemTouchHelper.RIGHT) {
+                    onChangeTaskStatus(taskName, Constants.TASK_COMPLETED);
                 }
 
             }
+
         }).attachToRecyclerView(recyclerView);
 
+    }// end setupRecyclerView
+
+    protected void onChangeTaskStatus(String taskName, int newStatus) {
+        taskController.changeTaskStatus(taskName, newStatus);
     }
 
+    protected void changeTaskStatus(String taskName, boolean success, int newStatus) {
+        //Called by controller
+        String msg;
 
-    public void deleteTask(TaskCLS task) {
-        if(task == null)
-            return;
+        adapter.notifyDataSetChanged();
+        updateUI();
 
-        if(task.getStatus() != Constants.TASK_DELETED) {
-            taskListManager.deleteTask(task);
-            adapter.notifyDataSetChanged();
-            updateUI();
-            Util.makeToast(this, "Deleted task");
+        switch(newStatus) {
+            case Constants.TASK_DELETED:
+                msg = "Deleted: " + taskName;
+                break;
+
+            case Constants.TASK_ARCHIVED:
+                msg = "Archived: " + taskName;
+                break;
+
+            case Constants.TASK_COMPLETED:
+                msg = "Completed task: " + taskName;
+                break;
+
+            default:
+                msg = "Changed status of task: " + taskName;
+                break;
         }
-    }//end deleteTask
 
-
-    public void unDeleteTask(TaskCLS task) {
-        if(task == null)
-            return;
-
-        if(task.getStatus() == Constants.TASK_DELETED) {
-            taskListManager.unDeleteTask(task);
-            adapter.notifyDataSetChanged();
-            updateUI();
-            Util.makeToast(this, "Undeleted task");
+        if(success) {
+            Util.makeToast(this, msg);
+        } else {
+            Util.makeToast(this, "Error occurred while attempting to change task's status " + taskName);
         }
-    }//end unDeleteTask
+    } //changeTaskStatus
 
 
-    public void unArchiveTask(TaskCLS task) {
-        if(task == null)
-            return;
-
-        if(task.getStatus() == Constants.TASK_ARCHIVED) {
-            taskListManager.changeArchiveStatus(task, Constants.TASK_OPEN);
-            //adapter.notifyItemRemoved(taskPosition);
-            adapter.notifyDataSetChanged();
-            updateUI();
-        }
-    }
-
-
-    public void setTaskToArchive(TaskCLS task) {
-        if(task == null)
-            return;
-
-        if(task.getStatus() != Constants.TASK_DELETED) {
-            taskListManager.changeArchiveStatus(task, Constants.TASK_ARCHIVED);
-            //adapter.notifyItemRemoved(taskPosition);
-            adapter.notifyDataSetChanged();
-            updateUI();
-        }
-    }
 
     private void saveSwappedTaskPositionsToDB() {
         if(movedTasks.isEmpty())
@@ -713,35 +678,6 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
 
 
     }// end saveSwappedTaskPosition
-
-    private boolean markTaskAsDeleted(TaskCLS task, int position) {
-        DatabaseHelper dbh = DatabaseHelper.getInstance(this);
-
-        if(dbh.updateTaskDeletionStatus(task.getTaskID(), Constants.TASK_DELETED)) {
-            //task.setStatus(Constants.TASK_DELETED);
-            //task.setDateModified(Util.getCurrentDateTime());
-            taskListManager.deleteTask(position);
-            //adapter.notifyItemRemoved(position);
-            adapter.notifyDataSetChanged();
-            return true;
-        }
-        else
-            return false;
-    }
-
-    private boolean markTaskAsCompleted(TaskCLS task, int position) {
-        DatabaseHelper dbh = DatabaseHelper.getInstance(this);
-
-        if(dbh.updateTaskStatus(task.getTaskID(), Constants.TASK_COMPLETED)) {
-            //task.setStatus(Constants.TASK_COMPLETED);
-            //task.setDateModified(Util.getCurrentDateTime());
-            taskListManager.markTaskAsCompleted(position);
-            adapter.notifyItemRemoved(position);
-            return true;
-        }
-        else
-            return false;
-    }
 
     private void populateListFromServer(boolean clearTasksTable) {
         if(clearTasksTable) {

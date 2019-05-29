@@ -156,7 +156,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
 
-    public void updateTask(int id, String newName){
+    public void updateTaskName(int id, String newName){
         SQLiteDatabase db = doGetWritableDatabase();
 
         String query = "UPDATE " + TASKS_TABLE + " SET task_name = '" + newName.trim() +
@@ -173,8 +173,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public boolean updateTaskDeletionStatus(int id, int newStatus){
         //TODO: decide on having a to_delete flag OR TASK_DELETED status...not both
-        boolean deleted = true;
         int to_delete = 0;
+        boolean deleted = true;
+
+        if(id < 0)
+            return false;
 
         if(newStatus == Constants.TASK_DELETED)
             to_delete =  1;

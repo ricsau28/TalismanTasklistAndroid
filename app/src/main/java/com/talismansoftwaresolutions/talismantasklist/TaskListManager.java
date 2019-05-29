@@ -93,20 +93,46 @@ public class TaskListManager {
     }
 
     public TaskCLS getTask(int position) {
-        if(position >= 0) {
+        if(position >= 0)
             return this.taskList.get(position);
-        }
 
         return null;
     }
 
+    public int getTaskID(String taskName) {
+        int position;
+        int taskID = -1;
 
-    private int findTaskPosition(TaskCLS taskToFind) {
+        if(Util.stringIsNullOrEmpty(taskName))
+            return -1;
+
+        position = findTaskPosition(taskName);
+
+        if(position != -1)
+            taskID = (taskList.get(position)).getTaskID();
+
+        return taskID;
+
+    }// end getTaskID
+
+    public TaskCLS getTask(String taskName) {
+        if(Util.stringIsNullOrEmpty(taskName))
+            return null;
+
+        int position = findTaskPosition(taskName);
+        if(position > -1)
+            return taskList.get(position);
+        else
+            return null;
+    }
+
+
+
+    protected int findTaskPosition(String taskName) {
         //TODO: store tasks in hashtable by task name
-        String taskName = taskToFind.getTaskName();
 
         for(int i = 0; i < taskList.size(); i++) {
-            if(taskName.equals( (taskList.get(i)).getTaskName()) ) {
+            if(taskName.trim().equals( (taskList.get(i)).getTaskName().trim()) ) {
                 return i;
             }
         }
@@ -114,9 +140,27 @@ public class TaskListManager {
     }// end findTaskPosition
 
 
+    public int removeTask(String taskName) {
+        //int position = findTaskPosition(task.getTaskName());
+        int position = findTaskPosition(taskName);
+        int taskID = -1;
+
+        if(position != -1) {
+            taskID = taskList.get(position).getTaskID();
+            taskList.remove(position);
+        }
+
+        return taskID;
+
+    }// end removeTask
+
+
     public void removeTask(TaskCLS task) {
-        int position = findTaskPosition(task);
-        taskList.remove(position);
+        //int position = findTaskPosition(task.getTaskName());
+        int position = taskList.indexOf(task);
+
+        if(position != -1)
+            taskList.remove(position);
     }// end removeTask
 
 
@@ -149,6 +193,15 @@ public class TaskListManager {
         this.taskList.add(newTask);
         this.taskList.addAll(taskListClone);
 
+    }
+
+    public int markTaskAsCompleted(String taskName) {
+        int position = findTaskPosition(taskName);
+        TaskCLS task = taskList.get(position);
+        task.setStatus(Constants.TASK_COMPLETED);
+        task.setDateModified(Util.getCurrentDateTime());
+        removeTask(position);
+        return task.getTaskID();
     }
 
     public void markTaskAsCompleted(int position) {
