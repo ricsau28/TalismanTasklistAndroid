@@ -75,6 +75,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     }// end executeSQL
 
+
+
     public void updateTaskOrder() {
         String query;
         String sql;
@@ -89,7 +91,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 count = cur.getInt(0);
             }
             cur.close();
-            sql = "UPDATE tasks SET order_num=" + String.valueOf(count) + " WHERE order_num = 0";
+            //sql = "UPDATE tasks SET order_num=" + String.valueOf(count) + " WHERE order_num = 0";
+            sql = "UPDATE tasks SET order_num= 100";
             db.execSQL(sql);
         } catch (SQLiteException slex) {
             Util.writeToLog("updateTaskOrder: " + slex.getMessage());
@@ -342,6 +345,48 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } catch(SQLiteException slex) {
             Util.writeToLog("DatabaseHelper.changeServerUserID: " + slex.getMessage());
         }
+    }
+
+
+    public boolean moveTasksDown(int taskID, int taskStatus) {
+        String sqlUpdate = "UPDATE tasks SET order_num=order_num + 1 WHERE _id <>" + taskID + " " +
+                           "AND status=" + taskStatus;
+
+        SQLiteDatabase db = doGetWritableDatabase();
+
+        try{
+            db.execSQL(sqlUpdate);
+            Util.writeToLog("moveTasksDown: " + sqlUpdate);
+        } catch (SQLiteException slex) {
+            Util.writeToLog("moveTasksDown: " + slex.getMessage());
+            return false;
+        }
+
+        return true;
+    }// end moveTasksDown
+
+
+    public boolean moveTaskToTop(int taskID, int taskStatus) {
+        String []sqlUpdates = new String[]{
+                            "UPDATE tasks SET order_num=0 WHERE _id=" + taskID,
+                            "UPDATE tasks SET order_num=order_num + 1 WHERE _id <>" + taskID + " " +
+                            "AND status=" + taskStatus};
+
+        SQLiteDatabase db = doGetWritableDatabase();
+
+        for(String sql : sqlUpdates) {
+
+            try{
+                db.execSQL(sql);
+                Util.writeToLog("moveTaskToTop: " + sql);
+            } catch (SQLiteException slex) {
+                Util.writeToLog("moveTaskToTop: " + slex.getMessage());
+                return false;
+            }
+
+        }// end for
+
+        return true;
     }
 
 

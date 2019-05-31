@@ -432,6 +432,8 @@ public class TaskJSONParser {
         JSONArray jsonArray = new JSONArray();
         JSONObject jsonObject = new JSONObject();
 
+        //TODO: Upload tasks from local database rather than current task list (RS, 5/31/2019)
+
         //NB: Be careful here as we're *not* uploading tasks mark for deletion
         for(TaskCLS task : taskList) {
             if(task.getStatus() == Constants.TASK_DELETED)

@@ -12,7 +12,7 @@ public class Config {
     private static String[] domains = new String[]{"http://192.168.0.15", "sandbox-1804",
                                                    "http://www.talismansoftwaresolutions.com"};
 
-    private static int CURRENT_DOMAIN = DOMAIN_LOCAL;
+    private static int CURRENT_DOMAIN = DOMAIN_PROD;
 
     public static String TASKS_ALL_URL          = domains[CURRENT_DOMAIN] +  "/api/v1/tasks/all";
     public static String TASKS_COMPLETED_URL    = domains[CURRENT_DOMAIN] +  "/api/v1/tasks/completed";

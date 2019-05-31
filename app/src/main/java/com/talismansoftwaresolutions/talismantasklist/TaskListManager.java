@@ -92,6 +92,7 @@ public class TaskListManager {
         return this.taskList.size();
     }
 
+
     public TaskCLS getTask(int position) {
         if(position >= 0)
             return this.taskList.get(position);
@@ -126,7 +127,14 @@ public class TaskListManager {
             return null;
     }
 
+    public TaskCLS getTaskByID(int taskID) {
+        int position = findTaskPositionByID(taskID);
 
+        if(position != -1)
+            return getTask(position);
+        else
+            return null;
+    }
 
     protected int findTaskPosition(String taskName) {
         //TODO: store tasks in hashtable by task name
@@ -138,6 +146,18 @@ public class TaskListManager {
         }
         return -1;
     }// end findTaskPosition
+
+
+    protected int findTaskPositionByID(int taskID) {
+        //TODO: store tasks in hashtable by task name
+
+        for(int i = 0; i < taskList.size(); i++) {
+            if(taskID == taskList.get(i).getTaskID()) {
+                return i;
+            }
+        }
+        return -1;
+    }// end findTaskPositionByID
 
 
     public int removeTask(String taskName) {

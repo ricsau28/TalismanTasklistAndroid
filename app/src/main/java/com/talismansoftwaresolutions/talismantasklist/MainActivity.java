@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
 
     private void doOneTimeActions() {
         // === TODO: DELETE WHEN FINISHED! ================================
-        //DatabaseHelper dbh = DatabaseHelper.getInstance(this);
+        DatabaseHelper dbh = DatabaseHelper.getInstance(this);
         //dbh.executeSQL("UPDATE tasks SET status = " + Constants.TASK_OPEN + ", to_delete =0");
         //dbh.executeSQL("UPDATE tasks SET to_delete = 0");
         //dbh.updateTaskOrder();
@@ -192,13 +192,15 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
                 selectedMode = Constants.ALL_TASKS;
                 break;
 
-            case R.id.action_server_tasks:
-                selectedMode = Constants.DOWNLOADED_TASKS;
-                break;
-
             case R.id.action_deleted_tasks:
                 selectedMode = Constants.DELETED_TASKS;
                 break;
+
+           /*
+            case R.id.action_server_tasks:
+                selectedMode = Constants.DOWNLOADED_TASKS;
+                break;
+            */
 
             case R.id.action_tests_server:
                 startTestActivity();
@@ -207,6 +209,10 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
             case R.id.action_server_upload_tasks:
                 uploadTasksToServer();
                 return true;
+
+            case R.id.action_server_download_tasks:
+                selectedMode = Constants.DOWNLOADED_TASKS;
+                break;
 
             case R.id.action_delete_all_tasks:
                 deleteLocalTasks();
@@ -227,8 +233,8 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
         if(tasksShowingMode != Constants.DOWNLOADED_TASKS)
             populateList(tasksShowingMode);
         else {
-            boolean clearTasksTable = false;
-            populateListFromServer(clearTasksTable);
+            //boolean clearTasksTable = false;
+            populateListFromServer(false);
         }
 
         return super.onOptionsItemSelected(item);
@@ -500,7 +506,6 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
 
         saveSwappedTaskPositionsToDB();
 
-
         DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
 
         if(dbHelper == null || appUser.getUserID() < 0)
@@ -532,6 +537,20 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
         taskListManager.addTask(task);
     }
 
+    private void onItemMoveComplete(String taskName) {
+        //A move has occurred and completed. The task name passed to us
+        //should now be moved to the top of the list
+        TaskCLS task = taskListManager.getTask(taskName);
+        if( task != null ) {
+            //TODO: Testing - for now only enable in Archive mode
+            if(tasksShowingMode == Constants.ARCHIVED_TASKS) {
+                DatabaseHelper dbh = DatabaseHelper.getInstance(this);
+                dbh.moveTaskToTop(task.getTaskID(), task.getStatus());
+            }
+        }
+
+    } // end onItemMoveComplete
+
     private void setUpRecyclerView() {
 
         adapter = new TaskListAdapter(this, taskListManager.getTaskList());
@@ -541,9 +560,11 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
 
-
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN,
                 ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+            int dragFrom = -1;
+            int dragTo = -1;
 
             /*
             @Override public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
@@ -567,7 +588,7 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
 
             @Override
             public boolean isLongPressDragEnabled() {
-                if(tasksShowingMode == Constants.OPEN_TASKS)
+                if(tasksShowingMode == Constants.OPEN_TASKS || tasksShowingMode == Constants.ARCHIVED_TASKS)
                     return true;
                 else
                     return false;
@@ -575,12 +596,14 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
 
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder dragged, RecyclerView.ViewHolder target) {
-                if(tasksShowingMode == Constants.OPEN_TASKS) {
+                if(tasksShowingMode == Constants.OPEN_TASKS || tasksShowingMode == Constants.ARCHIVED_TASKS) {
+
 
                     int dragPosition = dragged.getAdapterPosition();
                     int targetPosition = target.getAdapterPosition();
 
                     saveSwappedTaskPosition(dragPosition, targetPosition);
+
 
                     taskListManager.swap(dragPosition, targetPosition);
                     adapter.notifyItemMoved(dragPosition, targetPosition);
@@ -590,6 +613,21 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
 
                 return false;
             }
+
+
+            @Override
+            public void clearView(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+
+                if(dragFrom != -1 && dragTo != -1 && dragFrom != dragTo) {
+                    //reallyMoved(dragFrom, dragTo);
+                    //saveSwappedTaskPosition(dragFrom, dragTo);
+                }
+
+                dragFrom = dragTo = -1;
+            }
+
+
 
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
@@ -650,6 +688,9 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
         if(movedTasks.isEmpty())
             return;
 
+        int taskID = -1;
+        int taskIDTop = -1;
+        int newPosition = -1;
         DatabaseHelper dbh = DatabaseHelper.getInstance(this);
 
         // using iterators
@@ -658,20 +699,36 @@ public class MainActivity extends AppCompatActivity implements IJSONCallback{
         while(itr.hasNext())
         {
             Map.Entry<Integer, Integer> entry = itr.next();
-            dbh.updateTaskViewOrder(entry.getKey(), entry.getValue());
-            //System.out.println("Key = " + entry.getKey() +
-            //        ", Value = " + entry.getValue());
+
+            taskID = entry.getKey();
+            newPosition = entry.getValue();
+
+            //if(newPosition != 0)
+                dbh.updateTaskViewOrder(taskID, newPosition);
+            //else
+            //    taskIDTop = taskID;
         }
+
+        /*
+
+        if(taskIDTop != -1) {
+            TaskCLS topTask = taskListManager.getTaskByID(taskIDTop);
+            if(topTask != null && topTask.getOrderNum() != 0)
+                dbh.moveTaskToTop(taskIDTop, topTask.getStatus());
+        }
+        */
 
         movedTasks.clear();
 
     }// end saveSwappedTaskPositionsToDB
+
 
     private void saveSwappedTaskPosition(int oldPosition, int newPosition) {
         ArrayList<TaskCLS> taskList = TaskListManager.getInstance(this).getTaskList();
 
         TaskCLS taskAtOld = taskList.get(oldPosition);
         TaskCLS taskAtNew = taskList.get(newPosition);
+
 
         movedTasks.put(taskAtOld.getTaskID(), newPosition);
         movedTasks.put(taskAtNew.getTaskID(), oldPosition);

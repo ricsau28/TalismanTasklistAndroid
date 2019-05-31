@@ -48,7 +48,7 @@
                 android:id="@+id/action_server_upload_tasks"
                 android:title="@string/server_upload_tasks" />
             <item
-                android:id="@+id/action_server_tasks"
+                android:id="@+id/action_server_download_tasks"
                 android:title="@string/server_download_tasks" />
             <item
                 android:id="@+id/action_tests_server"
